@@ -1,4 +1,6 @@
+import Link from "next/link";
 import React from "react";
+import style from "./layout.module.css";
 
 export default function RootLayout({
   children,
@@ -8,7 +10,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <div className={styleText.container}>
+        <div className={style.container}>
           <header>
             <Link href={"/"}>📚 ONEBITE BOOKS</Link>
           </header>
