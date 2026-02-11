@@ -1,40 +1,27 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/pages/api-reference/create-next-app).
+### 앱 라우터 방식 메모
 
-## Getting Started
+- 클라이언트 컴포넌트를 사용하기 위해서는 코드 최상단에 "use client" 작성해야 함
 
-First, run the development server:
+  ```typescript
+  "use client";
+  ```
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- 서버 클라이언트는 비동기 함수(async)로 선언 가능한데 덕분에 SSR 시점에 데이터를 페칭해서 결과를 생성할 수 있다.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+  > Spring Boot의 MVC 패턴에서 Model에 값 할당해두고 thymleaf로 렌더링해서 응답내려주는.. 거로 이해하면 되겠네.
 
-You can start editing the page by modifying `pages/index.tsx`. The page auto-updates as you edit the file.
+- useRoute를 사용할 때는 "next/navigation"에서 가져온다.
 
-[API routes](https://nextjs.org/docs/pages/building-your-application/routing/api-routes) can be accessed on [http://localhost:3000/api/hello](http://localhost:3000/api/hello). This endpoint can be edited in `pages/api/hello.ts`.
+  > "next/router"에서 가져오지 않도록 주의한다.
 
-The `pages/api` directory is mapped to `/api/*`. Files in this directory are treated as [API routes](https://nextjs.org/docs/pages/building-your-application/routing/api-routes) instead of React pages.
+- 앱 라우터는 `app` 디렉터리 하위의 디렉터리 구조로 라우터가 구성되는 구조이다.
+  - 그리고 디렉터리 안에 `page.tsx`와 같은 파일을 구성해서 라우트 페이지를 생성할 수 있다.
+  - Spring boot에서는 HTTP method anotation, 파일 경로,
 
-This project uses [`next/font`](https://nextjs.org/docs/pages/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+  ```
+  # directory
+  /app/book/detail/page.tsx
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn-pages-router) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/pages/building-your-application/deploying) for more details.
+  # URL segment
+  /book/detail
+  ```
