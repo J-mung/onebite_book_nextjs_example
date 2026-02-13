@@ -1,5 +1,6 @@
 import { BookData } from "@/types";
 import style from "./page.module.css";
+
 export default async function Page({
   params,
 }: {
