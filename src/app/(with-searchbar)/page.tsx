@@ -28,7 +28,7 @@ async function RecoBooks() {
   try {
     const response = await fetch(
       `${process.env.NEXT_PUBLIC_API_URL}/book/random`,
-      { next: { revalidate: 5 } }, // 5초까지 데이터 캐시 사용하며 이후에 데이터 갱신
+      { cache: "no-store" }, // 새로고침마다 새로운 데이터 불러옴
     );
     if (!response.ok) throw new Error(response.statusText);
 
