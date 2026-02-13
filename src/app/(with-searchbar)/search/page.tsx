@@ -13,6 +13,7 @@ export default async function Page({
 
     const response = await fetch(
       `${process.env.NEXT_PUBLIC_API_URL}/book/search?q=${q}`,
+      { cache: "force-cache" }, // 요청 시, 데이터 캐시 사용
     );
     if (!response.ok) throw new Error(response.statusText);
 

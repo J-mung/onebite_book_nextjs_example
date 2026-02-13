@@ -12,6 +12,7 @@ export default async function Page({
 
     const response = await fetch(
       `${process.env.NEXT_PUBLIC_API_URL}/book/${id}`,
+      { cache: "force-cache" }, // 요청 시, 데이터 캐시 사용
     );
     if (!response.ok) throw new Error(response.statusText);
 

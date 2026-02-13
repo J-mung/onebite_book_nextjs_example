@@ -4,7 +4,9 @@ import style from "./page.module.css";
 
 async function AllBooks() {
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/book`);
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/book`, {
+      cache: "force-cache", // 요청 시, 데이터 캐시 사용
+    });
     if (!response.ok) throw new Error(response.statusText);
 
     const allBooks: BookData[] = await response.json();
@@ -26,6 +28,7 @@ async function RecoBooks() {
   try {
     const response = await fetch(
       `${process.env.NEXT_PUBLIC_API_URL}/book/random`,
+      { next: { revalidate: 5 } }, // 5번까지 데이터 캐시 사용하며 이후에 데이터 갱신
     );
     if (!response.ok) throw new Error(response.statusText);
 
