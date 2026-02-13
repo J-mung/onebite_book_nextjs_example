@@ -1,5 +1,6 @@
 import BookItem from "@/components/book-item";
-import books from "@/mock/books.json";
+import { BookData } from "@/types";
+
 export default async function Page({
   searchParams,
 }: {
@@ -7,13 +8,25 @@ export default async function Page({
     q?: string;
   }>;
 }) {
-  const { q } = await searchParams;
+  try {
+    const { q } = await searchParams;
 
-  return (
-    <div>
-      {books.map((_book) => (
-        <BookItem key={_book.id} {..._book} />
-      ))}
-    </div>
-  );
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/book/search?q=${q}`,
+    );
+    if (!response.ok) throw new Error(response.statusText);
+
+    const books: BookData[] = await response.json();
+
+    return (
+      <div>
+        {books.map((_book) => (
+          <BookItem key={_book.id} {..._book} />
+        ))}
+      </div>
+    );
+  } catch (err) {
+    console.error(err);
+    return <div>오류가 발생했습니다.</div>;
+  }
 }
