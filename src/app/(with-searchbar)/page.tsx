@@ -22,15 +22,15 @@ async function AllBooks() {
 async function RecoBooks() {
   const response = await fetch(
     `${process.env.NEXT_PUBLIC_API_URL}/book/random`,
-    { cache: "no-store" }, // 새로고침마다 새로운 데이터 불러옴
+    { next: { revalidate: 3 } },
   );
   if (!response.ok) throw new Error(response.statusText);
 
-  const recoBooks: BookData[] = await response.json();
+  const randomBooks: BookData[] = await response.json();
 
   return (
     <div>
-      {recoBooks.map((_book) => (
+      {randomBooks.map((_book) => (
         <BookItem key={_book.id} {..._book} />
       ))}
     </div>
