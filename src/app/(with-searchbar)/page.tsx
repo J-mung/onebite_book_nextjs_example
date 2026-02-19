@@ -1,8 +1,12 @@
 import BookItem from "@/components/book-item";
+import BookItemSkeleton from "@/components/book-item-skeleton";
 import { BookData } from "@/types";
+import { delay } from "@/util/delay";
+import { Suspense } from "react";
 import style from "./page.module.css";
 
 async function AllBooks() {
+  await delay(3000);
   const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/book`, {
     cache: "force-cache", // 요청 시, 데이터 캐시 사용
   });
@@ -20,6 +24,7 @@ async function AllBooks() {
 }
 
 async function RecoBooks() {
+  await delay(5000);
   const response = await fetch(
     `${process.env.NEXT_PUBLIC_API_URL}/book/random`,
     { next: { revalidate: 3 } },
@@ -42,11 +47,23 @@ export default function Page() {
     <div className={style.container}>
       <section>
         <h3>지금 추천하는 도서</h3>
-        <RecoBooks />
+        <Suspense
+          fallback={new Array(3).fill(0).map((_, idx) => (
+            <BookItemSkeleton key={`reco-book-skeleton-${idx}`} />
+          ))}
+        >
+          <RecoBooks />
+        </Suspense>
       </section>
       <section>
         <h3>등록된 모든 도서</h3>
-        <AllBooks />
+        <Suspense
+          fallback={new Array(5).fill(0).map((_, idx) => (
+            <BookItemSkeleton key={`reco-book-skeleton-${idx}`} />
+          ))}
+        >
+          <AllBooks />
+        </Suspense>
       </section>
     </div>
   );
