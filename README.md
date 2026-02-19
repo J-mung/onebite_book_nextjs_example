@@ -1,4 +1,4 @@
-### 앱 라우터 방식 메모
+## 앱 라우터 방식 메모
 
 - 서버/클라이언트 컴포넌트를 사용하기 위해서는 적절한 위치에 "use server"/"use client"를 작성해야 함
 
@@ -249,3 +249,89 @@ app/
     no-store          항상 새 요청          SSR 느낌
     revalidate        일정 주기 갱신         ISR 느낌
     ```
+
+## 스트리밍(Streaming)과 스켈레톤(Skeleton)
+
+- 스트리밍(Streaming)이란 SSR의 단점인 응답 속도를 보완하는 것으로 html을 청크(chunk) 단위로 나눠서 점진적으로 응답해주는 기법이다.
+  - Next.js는 페이지의 모든 컴포넌트를 렌더링한 다음, 완성된 HTML 페이지로 브라우저에 응답한다.
+  - 이때 특정 컴포넌트에서 응답 지연이 발생해서 렌더링 병목이 발생하면 페이지 응답 자체가 느려지는 문제가 있다.
+
+  ```
+  #1 루트 레이아웃(10ms 소요)
+  #2 검색 폼 레이아웃(12ms 소요)
+  #3 검색 폼 컴포넌트(13ms 소요)
+  #4 페이지 컴포넌트(3,300ms 소요) *지연 발생*
+  ```
+
+  - 이러한 문제를 해결해주는 것이 스트리밍이다.
+  - 참고로 스트리밍은 다이나믹(dynamic) 페이지에서만 동작한다.
+    - 강세 설정하는 법
+    ```typescript
+    // 페이지 컴포넌트 위에 "dynamic" 라우트 세그먼트 컨픽 작성
+    export const dynamic = "force-dynamic";
+    ```
+
+- 스트리밍: loading.tsx
+  - 폴더 아래에 loading.tsx를 생성하면 해당 파일의 경로를 포함해 아래 경로의 페이지는 모두 자동으로 스트리밍할 수 있다.
+
+  ```typescript
+  export default function Loading() {
+    return <div>검색 결과를 불러오는 중입니다...</div>
+  }
+  ```
+
+  - 편리하지만 2가지 단점이 존재한다.
+    - 페이지 컴포넌트만 점진적으로 렌더링할 수 있다.
+      - 페이지 컴포넌트 이외의 컴포넌트에서 비동기 데이터를 호출하더라도 스트리밍이 불가능하다.
+    - 쿼리 스트링 변경은 스트리밍을 다시 유발하지 않는다.
+      - 동일한 url에 대해서 최초 1회에 한해서 loading.tsx 동작한다.
+      - 즉, 검색 폼에서 검색어를 입력하면 딱 1번만 스트리밍이 발생하고 이후부터는 검색어를 변경해도 스트리밍이 동작하지 않는다.
+
+- 스트리밍: Suspense 컴포넌트
+  - loading.tsx의 단점을 해결할 수 있는 컴포넌트이다.
+  - 특정 경로 세그먼트에 대한 폴백을 생성하고, 콘텐츠가 준비되는 대로 자동으로 스트리밍할 수 있게 하는 Suspense 기반의 로딩 UI를 사용한다.
+  - 쿼리 스트링이 변경될 때에도 스트리밍을 발생시키기 위해서는 Suspense 컴포넌트의 key 값을 지정할 필요가 있다.
+    - React 렌더링의 특징으로, key 바뀌면 가상 DOM이 새로운 컴포넌트로 변경됐다고 인지해 리렌더링되기 때문이다.
+
+  ```typescript
+  // 기본 사용
+  import { Suspense } from 'react'
+  import { PostFeed, Weather } from './Components'
+
+  export default function Posts() {
+    return (
+      <section>
+        <Suspense fallback={<p>Loading feed...</p>}>
+          <PostFeed />
+        </Suspense>
+        <Suspense fallback={<p>Loading weather...</p>}>
+          <Weather />
+        </Suspense>
+      </section>
+    )
+  }
+  ```
+
+  ```typescript
+  // Suspense key 지정()
+  export default async function Page({
+    searchParams
+  }: {
+    searchParams: Promise<{q?: string}>
+  }) {
+    const { q } = await searchParams;
+
+    return (
+      <Suspense
+        key={q || ""}
+        fallback={<div>검색 결과를 불러오는 중입니다...</div>}
+      >
+        <SearchResult q={q || ""} />
+      </Suspense>
+    );
+  }
+  ```
+
+- 스켈레톤(Skeleton)은 렌더링할 콘텐츠의 최종 모습을 간략히 보여 주는 로딩 UI를 말한다.
+- 대략적인 UI를 사용자에게 제공해주므로 단순 텍스트로 안내하는 것보다 훨씬 더 개선된 UX를 제공할 수 있다.
+- 보여주고자 하는 스켈레톤 UI를 생성해서 Suspense의 fallback으로 지정하면 된다.
