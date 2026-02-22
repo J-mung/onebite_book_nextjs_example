@@ -76,15 +76,6 @@ export default async function Page({
   // params로 참조 가능하다.
   const { id } = await params;
 
-  const response = await fetch(
-    `${process.env.NEXT_PUBLIC_API_URL}/book/${id}`,
-    { cache: "force-cache" }, // 요청 시, 데이터 캐시 사용
-  );
-  if (!response.ok) throw new Error(response.statusText);
-
-  const book: BookData = await response.json();
-  const { title, subTitle, description, author, publisher, coverImgUrl } = book;
-
   return (
     <div className={style.container}>
       <BookDetail bookId={id} />
