@@ -335,3 +335,155 @@ app/
 - 스켈레톤(Skeleton)은 렌더링할 콘텐츠의 최종 모습을 간략히 보여 주는 로딩 UI를 말한다.
 - 대략적인 UI를 사용자에게 제공해주므로 단순 텍스트로 안내하는 것보다 훨씬 더 개선된 UX를 제공할 수 있다.
 - 보여주고자 하는 스켈레톤 UI를 생성해서 Suspense의 fallback으로 지정하면 된다.
+
+## 서버 액션(Action)
+
+### 들어가며
+
+- 우리는 웹 화면에서 수많은 목록들을 확인할 수 있다.
+- 이때 저장하기 제출하기와 같은 버튼을 눌렀을 때 결과가 반영되서 새로운 항목이 목록에 추가되길 기대한다.
+- 즉, [ 버튼 클릭 - 데이터 전송 - 새 목록 불러오기 ]와 같은 흐름이 한 번에 진행되길 기대하는 것이다.
+- Next.js에서는 **서버 액션**과 **revalidatePath**를 활용해서 간편하게 구현할 수 있다.
+
+### 개념
+
+> 서버 액션(Action)이란 애플리케이션에서 폼 제출 및 데이터 변조를 처리하기 위해 서버에서 실행되는 비동기 함수이다.
+
+- 조금 더 쉽게 설명하면 Next.js 서버에서 실행되는 비동기 함수 가운데 클라이언트가 직접 호출할 수 있는 함수이다.
+
+- 다음의 코드가 간단하게 구현한 서버 액션의 예시이다.
+
+```typescript
+  // src/app/test/page.tsx
+
+  export default function Page() {
+    const addReviewAction = async (formData: FromData) => {
+      "use server";
+
+      const content = formData.get("content");
+      const reviewer = formData.get("reviewer");
+
+      console.log ({ content, reviewer });
+    };
+
+    return (
+      <form action={addReviewAction}>
+        <input type="text" name="content" />
+        <input type="text" name="reviewer" />
+        <button type="submit">작성하기</button>
+      </form>
+    );
+  }
+
+  // 실행결과
+  { content: "리뷰입니다.", reviewer: "J_mung" }
+```
+
+- 게시글에 리뷰를 작성한다고 가정하자.
+- 간단하게 리뷰 내용, 작성자, 작성하기 버튼으로 구성된 form이 있다.
+- 사용자는 원하는 내용과 작성자를 타이핑 하고 작성하기 버튼을 누르게 된다.
+- 그러면 브라우저는 서버로 데이터를 전송하여 console에 로그를 찍는 걸 확인할 수 있다.
+
+- 위와 같은 기능을 지원하기 위해 전통적인 방식으로 구현한다면 다음과 같은 과정들이 필요하다.
+  - 1. REST API 설계 및 구현
+  - 2. API 엔드포인트 정의
+  - 3. 처리 핸들러 구현
+  - 4. 요청 및 응답 처리
+  - 5. 상태 코드 관리
+  - 6. 에러 핸들러
+
+- 그러나 Next.js에서는 서버에서 실행할 함수를 간단하게 정의해서 클라이언트가 호출할 수 있도록 지원하기 때문에
+- 코드를 매우 간결하게 작성하면서 생산성을 높일 수 있게 된다.
+- 게다가 서버 액션은 Next.js 서버에서 동작하는 함수이므로 브라우저에 코드가 노출되지 않는 장점도 있다.
+- 덕분에 보안이 중요한 작업에도 많은 도움을 준다.
+
+### 클라이언트가 서버 함수를 호출할 수 있는 이유
+
+- 신기한 점은 서버 액션 함수는 서버에서만 존재하기 때문에 클라이언트는 함수 코드를 알 수 없다.
+- 그럼에도 불구하고 클라이언트가 서버 액션 함수를 실행시킬 수 있는 이유는 클라이언트가 서버 액션 ID를 알기 때문이다.
+- 빌드를 진행하면서 페이지를 생성할 때 "use server" 명령어에 의해 서버 액션 함수도 컴파일된다.
+- 컴파일 되면서 서버 액션 ID가 함께 생성되고 함수 식별 키로서 사용하게 된다.
+- 클라이언트에서는 form의 action 속성과 같은 곳에 서버 액션 ID를 저장하게 된다.
+- 이 ID는 클라이언트가 서버에 요청할 때 함께 전송되어 어떤 서버 액션을 실행할지 Next.js 서버가 판단하게 된다.
+
+```
+  사용자                브라우저                  Next.js 서버
+        폼 제출
+                              POST 요청
+                              Next-Action 필드로
+                              서버 액션 아이디 포함
+                                                      서버 액션 실행
+                              응답
+```
+
+- 간단하게 설명하기 위해서 "호출"이라는 용어를 사용했으나 사실은 서버 액션 ID 값을 넘김으로써
+- 서버가 함수를 실행하도록 요청한 것이다.
+- 이러한 기법을 RPC(Remote Procedure Call)이라고 부르며 Next.js에서 이 모든 과정을
+- 추상화 하고 있기 때문에 우리는 간편하게 사용하기만 하면 된다.
+
+### 주의사항
+
+- [ 1. "함수"라는 것에 집중하자 ]
+- 예시로 form 태그를 활용해서 form에서만 사용할 수 있는 것처럼 보일 수 있으나 그렇지 않다.
+- 비동기 함수를 하나 선언해서 내부에 서버 액션 함수를 호출하도록 정의한다.
+- 버튼의 click 이벤트에 비동기 함수를 바인딩하여 실행되도록 하면 정상 작동하는 모습을 확인할 수 있다.
+
+  ```typescript
+  // src/app/test/add-review.action.ts
+  "use server";
+  export const addReviewAction = async (formData: FormData) => {
+    const content = formData.get("content");
+    const reviewer = formData.get("reviewer");
+
+    console.log({ content, reviewer });
+  };
+  ```
+
+  ```typescript
+  "use client"
+
+  export default function Page() {
+    const contentRef = useRef<HTMLInputElement>(null);
+    const reviewerRef = useRef<HTMLInputElement>(null);
+
+    const onClickAddReview = async () => {
+      if (!contentRef || !reviewerRef) reutrn;
+
+      const content = contentRef.current.value;
+      const reviewerRef = reviewerRef.current.value;
+
+      const formData = new FormData();
+      formData.set("content", content);
+      formData.set("reviewer", reviewer);
+
+      await addReviewAction(formData);
+    };
+
+    return (
+      <div>
+        <input type="text" name="content" />
+        <input type="text" name="reviewer" />
+        <button onClick={onClickAddReview}>작성하기</button>
+      </div>
+    );
+  }
+  ```
+
+- [ 2. 비동기 함수로 만들어야 한다. ]
+- 특별한 이유는 없다. 단지 서버 액션 자체가 비동기 함수로 설계 됐기 때문이다.
+- 만약 함수를 동기적으로 구현한다면 오류가 발생한다.
+
+  ```typescript
+  "use server";
+  // async 제거
+  export const addReviewAction = (formData: FormData) => {
+    const content = formData.get("content");
+    const reviewer = formData.get("reviewer");
+
+    console.log({ content, reviewer });
+  };
+  ```
+
+  > "Server Actions must be async function"
+
+- 상당히 친절한 오류이므로 지키도록 하자.
